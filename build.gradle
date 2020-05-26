@@ -54,12 +54,9 @@ dependencies {
 	implementation 'org.apache.activemq:activemq-pool:5.9.0'
 
 	compile fileTree(dir: 'lib', include: '*.jar')
-	implementation 'org.jmockit:jmockit:1.8'
 	testCompile "org.mockito:mockito-core:2.+"
 	//testCompile "org.mockito:mockito-junit-jupiter"
-	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-	testImplementation 'org.powermock:powermock-module-junit4:2.0.7'
-	testImplementation 'org.powermock:powermock-api-mockito2:2.0.7'
+	//testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
 checkstyle {
@@ -115,12 +112,12 @@ jacocoTestCoverageVerification {
 }
 
 test {
-
+	
 	useJUnitPlatform()
-
+	
 	jacoco {
 		destinationFile = file("$buildDir/jacoco/jacocoTest.exec")
 		classDumpDir = file("$buildDir/jacoco/classpathdumps")
 	}
-
+	
 }
