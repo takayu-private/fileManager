@@ -1,0 +1,3 @@
+keytool -import -trustcacerts -file "D:\ICF_AutoCapsule_Disabled\àƒåè\download\amadeus.cer"  -keystore "D:\Program Files\RedHat\jdk-13\lib\security\cacerts"  -alias ca  -storepass changeit
+
+keytool -delete -noprompt -alias ca  -keystore "D:\Program Files\RedHat\jdk-13\lib\security\cacerts" -storepass changeit
