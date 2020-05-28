@@ -1,0 +1,72 @@
+#############################
+Nonce
+############################
+import org.apache.ws.security.util.Base64;
+import java.security.SecureRandom;
+def generate_nonce() {	
+	def random = SecureRandom.getInstance("SHA1PRNG");
+	random.setSeed(System.currentTimeMillis());
+	def nonceValue = new byte[16];
+	random.nextBytes(nonceValue);
+	return Base64.encode(nonceValue);
+}
+return generate_nonce()
+
+#############################
+Created
+#############################
+
+import java.text.SimpleDateFormat;
+def generate_created() {
+	def format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+	def cal = Calendar.instance;
+	format.setTimeZone(TimeZone.getTimeZone("Zulu"));	
+	return format.format(cal.time);
+}
+return generate_created()
+
+#############################
+Password
+#############################
+
+import org.apache.ws.security.util.Base64;
+import java.security.MessageDigest;
+import java.security.SecureRandom;
+import java.text.SimpleDateFormat;
+def password_encrypt(algorithm) {
+	def sha = MessageDigest.getInstance(algorithm);
+	sha.reset();
+	def password = testRunner.testCase.getPropertyValue("OverridePassword");
+	if (password == null || password.length() == 0) {
+		if (com.eviware.soapui.SoapUI.globalProperties.hasProperty("password")) {
+			password = com.eviware.soapui.SoapUI.globalProperties.getPropertyValue("password");
+			def b1 = password.getBytes("UTF-8");
+			sha.update(b1);
+		}
+		else {
+			testRunner.fail("LSS Password is not defined in the global properties (File > Preferences > Global Properties)")	
+		}
+	}
+	return sha.digest();
+}
+
+def password_digest(password, nonce, created) {
+	def passwdDigest = null;
+	def b1 = nonce != null ? Base64.decode(nonce) : new byte[0];
+	def b2 = created != null ? created.getBytes("UTF-8") : new byte[0];
+	def b3 = password;	def b4 = new byte[b1.length + b2.length + b3.length];
+	def offset = 0;
+	System.arraycopy(b1, 0, b4, offset, b1.length);
+	offset += b1.length;
+	System.arraycopy(b2, 0, b4, offset, b2.length);
+	offset += b2.length;
+	System.arraycopy(b3, 0, b4, offset, b3.length);
+	def sha = MessageDigest.getInstance("SHA-1");
+	sha.reset();
+	sha.update(b4);
+	passwdDigest = Base64.encode(sha.digest()); 
+	return passwdDigest;
+}
+return password_digest(password_encrypt("SHA-1"),
+testRunner.testCase.getPropertyValue("Nonce"),
+testRunner.testCase.getPropertyValue("Created"));
