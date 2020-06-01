@@ -93,38 +93,20 @@ public class OutputReportTest{
 		Whitebox.setInternalState(outputReport, "httpMethod", "GET");
 	}
 
-
-
-//	@Test
-	public void connectDBinsertReport_OK() throws SQLException, ClassNotFoundException {
-//		Class.forName("org.postgresql.Driver");
-		Connection conn = Mockito.mock(Connection.class);
-		PowerMockito.spy(DriverManager.class);
-		PowerMockito.doReturn(conn).when(DriverManager.class);
-		DriverManager.getConnection(anyString(), anyString(), anyString());
-
-//		PowerMockito.when(DriverManager.getConnection("")).thenReturn(conn);
-//		given(DriverManager.getConnection(DRIVER_URL, DB_USER, DB_PASSWD)).willReturn(conn);
-		//PowerMockito.doReturn(conn).when(DriverManager.getConnection(""));
-		//Connection conn = DriverManager.getConnection("","","");
-	}
-
 	@Test
 	public void insertReport_OK() throws SQLException, ClassNotFoundException {
-		ReportListDto dtoMock = mock(ReportListDto.class);
-		doNothing().when(reportListDao).insertReportToDB(reportListDto);
+		doNothing().when(reportListDao).insertReportToDB(any());
 		
-		String testReserveNum = "123456";
+		String reserveNum = "123456";
 		String testReportFile = "testtesttesttest";
 		
-		outputReport.insertReport(testReserveNum, testReportFile);
-		Field dtoField = outputReport.getClass().getDeclaredField("reportDto.get");
-        // private変数へのアクセス制限を解除
-		reportDto.setAccessible(true);
-		ReportListDto reportDto = (ReportListDto) reportDto.get(outputReport);
+		outputReport.insertReport(reserveNum, testReportFile);
 		
-		assertEquals(testReserveNum, reportDto.getReportName());
-		assertEquals(expected, reportDto.getReportData());
+		ReportListDto reportDto = Whitebox.getInternalState(outputReport, "reportDto");
+		
+		String testReportName = "report_" + reserveNum + ".pdf";
+		assertEquals(testReportName, reportDto.getReportName());
+		assertEquals(testReportFile, reportDto.getReportData());
 	}
 
 
