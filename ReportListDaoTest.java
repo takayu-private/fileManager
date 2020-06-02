@@ -39,7 +39,7 @@ public class ReportListDaoTest {
 	private String insertSql = "INSERT INTO report_list (file_name,file_data) values(?,?);";
 
 	@Mock
-	Connection dbConn = null;
+	Connection dbConn;
 	
 	@InjectMocks
 	ReportListDao reportDao = new ReportListDao();
