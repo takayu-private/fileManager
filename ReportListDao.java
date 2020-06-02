@@ -24,14 +24,6 @@ public class ReportListDao {
 		insertSql = System.getenv("REPORT_INSERT_SQL");
 	}
 
-//	public void connectDB() throws SQLException {
-//		//PostgreSQLへ接続
-//		DriverManager.setLoginTimeout(10000);
-//		dbConn = DriverManager.getConnection(driverUrl, dbUser, dbPasswd);	
-//		//自動コミットOFF
-//		dbConn.setAutoCommit(false);
-//	}
-
 	public void insertReportToDB(ReportListDto reportDto) {
 
 //		OutputLog.outputLogMessage(OutputLog.DEBUG, "INSERT_SQL_Before:" + insertSql);
@@ -53,6 +45,7 @@ public class ReportListDao {
 			dbConn.commit();
 		} catch (SQLException e) {
 			e.printStackTrace();
+			OutputLog.outputLogMessage(OutputLog.ERROR, "DB Connect ERROR. ");
 		} finally {
 			if( dbConn != null ) {
 				try {
@@ -65,16 +58,4 @@ public class ReportListDao {
 			}
 		}
 	}
-
-//	public void closeDB() {
-//		if( dbConn != null ) {
-//			try {
-//				dbConn.close();
-//			}
-//			catch(Exception e) {
-//				// 何もしない
-//				e.printStackTrace();
-//			}
-//		}
-//	}
 }

@@ -1,21 +1,21 @@
 package jp.co.ana.cas.proto.dao;
 
-import static org.easymock.EasyMock.expect;
 import static org.junit.Assert.fail;
-import static org.mockito.ArgumentMatchers.any;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.when;
-import static org.powermock.api.easymock.PowerMock.mockStatic;
-import static org.powermock.api.easymock.PowerMock.replay;
 
+import java.io.StringWriter;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
+import org.apache.log4j.LogManager;
+import org.apache.log4j.PatternLayout;
+import org.apache.log4j.WriterAppender;
 import org.junit.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.runner.RunWith;
@@ -103,7 +103,19 @@ public class ReportListDaoTest {
 		reportDto.setReportName("report_123456.pdf");
 		reportDto.setReportData("falkfgajtgafjapoit=");
 		
-		reportDaoSpy.insertReportToDB(reportDto);
+		StringWriter writer = new StringWriter();
+		WriterAppender appender = new WriterAppender(new PatternLayout("%p, %m%n"), writer);
+		LogManager.getRootLogger().addAppender(appender);
+		LogManager.getRootLogger().setAdditivity(false);
+		
+		try {
+			reportDaoSpy.insertReportToDB(reportDto);
+			String logString = writer.toString();
+			 assertTrue(logString.contains("DB Connect ERROR."));
+		} finally {
+			LogManager.getRootLogger().removeAppender(appender);
+			LogManager.getRootLogger().setAdditivity(true);
+		}
 		
 		
 	}
