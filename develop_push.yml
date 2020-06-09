@@ -1,0 +1,219 @@
+# This workflow will build a Java project with Maven
+# For more information see: https://help.github.com/actions/language-and-framework-guides/building-and-testing-java-with-maven
+
+name: Develop branch Java CI with Gradle6.x
+
+on:
+  push:
+    branches:
+      - develop**
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up JDK 1.8
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+
+      - name: バージョン情報を保存
+        run: |
+          REPOSITORY_NAME=${GITHUB_REPOSITORY##*/}
+          echo "LIB_BAS=cas-proto-nec2" > version.rc
+          echo "SVC_NMU=${REPOSITORY_NAME^^}" >> version.rc
+          echo "SVC_NML=${REPOSITORY_NAME,,}" >> version.rc
+          echo "VER_NUM=${GITHUB_REF##*-}" >> version.rc
+          echo "BLD_NUM=${GITHUB_RUN_NUMBER}" >> version.rc
+          echo "GIT_SH1=${GITHUB_SHA:0:7}" >> version.rc
+          source version.rc
+          echo "VER_INF=${VER_NUM}-${BLD_NUM}-${GIT_SH1}" >> version.rc
+
+      - name: 環境変数設定
+        run: |
+          cat version.rc
+          . version.rc
+          echo "::set-env name=LIB_BAS::${LIB_BAS}"
+          echo "::set-env name=SVC_NML::${SVC_NML}"
+          echo "::set-env name=VER_INF::${VER_INF}"
+          echo "::set-env name=SVC_NMU::${SVC_NMU}"
+
+      - name: 変数テスト
+        env:
+          NOTHING: $REPOSITORY_NAME
+          SINGLE:  ${REPOSITORY_NAME}
+          #DOUBLE:  ${{REPOSITORY_NAME}}
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY1: "cas-proto-nec2/cas-304_m0001"
+          ECR_REPOSITORY2: ${LIB_BAS}/${SVC_NML}
+        run: |
+          echo $NOTHING
+          echo $SINGLE
+          echo $DOUBLE
+          echo $ECR_REGISTRY
+          echo $ECR_REPOSITORY1
+          echo $ECR_REPOSITORY2
+          
+      - name: dependenciesのCache
+        uses: actions/cache@v1
+        with:
+          path: ~/.gradle
+          key: v1-dependencies-${{ hashFiles('**/CAS-304_M0001/build.gradle') }}
+          #restore-keys: v1-dependencies-
+
+      - name: ビルド
+        run:  ./gradlew clean bootJar
+        working-directory: CAS-304_M0001
+
+      - name: JUnit
+        run: ./gradlew test
+        working-directory: CAS-304_M0001
+
+      - name: JaCoCoレポート作成
+        run: ./gradlew jacocoTestReport
+        working-directory: CAS-304_M0001
+
+      - name: SpotBugs
+        run: ./gradlew spotbugsMain
+        working-directory: CAS-304_M0001
+
+      - name: Checkstyle
+        run: ./gradlew checkstyleMain
+        working-directory: CAS-304_M0001
+
+      - name: テスト結果保存
+        run: |
+          echo ${SVC_NMU}
+          mkdir -p ~/test-results
+          if [ -e "${SVC_NMU}/build/test-results/test" ]; then
+              cp -pr ${SVC_NMU}/build/test-results/test ~/test-results/junit
+          fi
+          if [ -e "${SVC_NMU}/Junit.log" ]; then
+              cp -pr ${SVC_NMU}/Junit.log ~/test-results/junit
+          fi
+          if [ -e "${SVC_NMU}/build/jacocoHtml" ]; then
+              cp -pr ${SVC_NMU}/build/jacocoHtml ~/test-results/jacoco
+          fi
+          if [ -e "${SVC_NMU}/build/reports/spotbugs/main" ]; then
+              cp -pr ${SVC_NMU}/build/reports/spotbugs/main ~/test-results/spotbugs
+          fi
+          if [ -e "${SVC_NMU}/build/reports/checkstyle" ]; then
+              cp -pr ${SVC_NMU}/build/reports/checkstyle ~/test-results/checkstyle
+          fi
+        if: ${{ always() }}
+
+      - name: test-results store artifacts
+        uses: actions/upload-artifact@master
+        with:
+          name: test-results
+          path: ~/test-results
+
+
+      # ワークスペースを保存
+      #- persist_to_workspace:
+      #    root: /home/circleci/project
+      #    paths:
+      #      - version.rc
+      #      - CAS-304_M0001/build/libs/CAS-304_M0001-0.0.1-SNAPSHOT.jar
+      #      - Dockerfile
+      #      - deploy
+
+
+      - name: AWS credentials 設定
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Amazon ECR ログイン
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: コンテナビルド＆ECRにプッシュ
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: "cas-proto-nec2/cas-304_m0001"
+        run: |
+          IMAGE_TAG=${VER_INF}
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+      - name: コンテナをS3に転送
+        env: 
+          S3_UPLOAD_BUCKET: ${LIB_BAS}
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: "cas-proto-nec2/cas-304_m0001"
+        run: |
+          IMAGE_TAG=${VER_INF}
+          docker save --output=${SVC_NML}.tar $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          aws s3 cp ${SVC_NML}.tar s3://${LIB_BAS}/${SVC_NML}/${VER_INF}/${SVC_NML}.tar --quiet
+
+      - name: リリースファイル(コンテナ以外)のアーカイブ転送 -> S3
+        env: 
+          S3_UPLOAD_BUCKET: ${LIB_BAS}
+        run: |
+          tar cvfz deploy.tgz deploy
+          aws s3 cp deploy.tgz s3://${LIB_BAS}/${SVC_NML}/${VER_INF}/ --quiet
+
+
+
+
+
+
+
+
+
+
+
+
+#     - name: Gradleでビルド
+#       run: |
+#         ./gradlew build
+#         
+#         # JUnit実行結果レポートを出力
+#         mvn site -DgenerateReports=false surefire-report:report-only
+#         
+#     - name: Configure AWS credentials
+#       uses: aws-actions/configure-aws-credentials@v1
+#       with:
+#         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+#         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+#         aws-region: ${{ secrets.AWS_REGION }}
+##     - name: JUnit＆カバレッジ結果 Upload file to S3
+#       env: 
+#         S3_UPLOAD_BUCKET: test-check-report
+#       run: |
+#         # JUnit実行結果とカバレッジ情報をひとまとめにする。
+#         tar cvzf junit.tgz target/site/surefire-report.html target/site/css  target/site/images
+#         tar cvzf jacoco.tgz target/site/jacoco
+##         aws s3 cp ./junit.tgz s3://test-check-report/ --quiet
+#         aws s3 cp ./jacoco.tgz s3://test-check-report/ --quiet
+##     - name: Findbugs実行＆結果レポートをS3に格納
+#       env: 
+#         S3_UPLOAD_BUCKET: test-check-report
+#       run: |
+#         mvn findbugs:findbugs
+#         aws s3 cp ./report/findbugs/findbugsXml.xml s3://test-check-report/ --quiet
+#         
+#     - name: checkstyle実行＆結果レポートをS3に格納
+#       env: 
+#         S3_UPLOAD_BUCKET: test-check-report
+#       run: |
+#         mvn checkstyle:checkstyle
+#         aws s3 cp ./target/checkstyle-result.xml s3://test-check-report/ --quiet
+##         docker images
+#         docker build -t demo_container:1 .
+#         docker create demo_container:1 > id
+#         docker export $(cat id) -o container.tar
+#       
+#         docker images
+#         ls -ltr .
+#       
+#     - name: コンテナ Upload file to S3
+#       env: 
+#         S3_UPLOAD_BUCKET: test-check-report
+#       run: |
+#         aws s3 cp ./container.tar s3://test-check-report/ --quiet
