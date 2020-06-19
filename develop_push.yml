@@ -1,1 +1,0 @@
-wireMockServer.addMockServiceRequestListener(WireMockPactGenerator.builder("consumer", "Altea").withRequestHeaderWhitelist("content-type", "connection", "user-agent", "accept") .build());
