@@ -1,11 +1,16 @@
-Dim file, fileData, textTurn
-file = Wscript.Arguments(0)
+Dim file, fileData, textTurn, fileName, fold
+fold = Wscript.Arguments(0)
 textTurn = 30000
 
 'テキストファイル読み込み
 Set objFSO = WScript.CreateObject("Scripting.FileSystemObject")
+set objFold=objFSO.GetFolder(fold)
+
+for each fileName In objFold.Files
+
 If Err.Number = 0 Then
-    Set objFile = objFSO.OpenTextFile(file)
+    WScript.Echo "開始: " & fileName
+    Set objFile = objFSO.OpenTextFile(fileName)
     If Err.Number = 0 Then
         Do While objFile.AtEndOfStream <> True
             fileData = objFile.ReadLine
@@ -24,14 +29,12 @@ Set objFSO = Nothing
 Dim strCount, roopCount
 strCount = Len(fileData)
 
-WScript.Echo strCount
-
 roopCount = strCount / textTurn
 
 'ファイル出力
 Set objFSO = WScript.CreateObject("Scripting.FileSystemObject")
 If Err.Number = 0 Then
-    Set objFile = objFSO.OpenTextFile("Done\" + file, 2, True)
+    Set objFile = objFSO.OpenTextFile("Done\" + objFSO.getFileName(fileName), 2, True)
     If Err.Number = 0 Then
     
     Dim strStart
@@ -48,6 +51,6 @@ Else
 End If
 
 Set objFile = Nothing
+WScript.Echo "終了: " & fileName
+Next
 Set objFSO = Nothing
-
-
