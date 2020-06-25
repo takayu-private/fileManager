@@ -1,0 +1,33 @@
+asciidoc 環境構築手順
+管理者権限のコマンドプロンプトで実施
+
+１．chocolateyインストール
+※Warningが3つ出力されるが問題なし。
+@"%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -InputFormat None -ExecutionPolicy Bypass -Command "iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))" && SET "PATH=%PATH%;%ALLUSERSPROFILE%\chocolatey\bin"
+
+２．rubyインストール
+choco install ruby
+
+３．rubyインストール確認
+※バージョンが表示されない場合はコマンドプロンプトを再起動する
+ruby -v
+gem -v
+
+４．asciidocインストール
+gem install asciidoctor             # asciidoctorのインストール
+gem install --pre asciidoctor-pdf   # asciidoctor-pdfのインストール
+gem install coderay                 # コードのシンタックスハイライト用
+gem install asciidoctor-pdf-cjk     # PDF変換のレイアウト崩れ対応
+gem install asciidoctor-diagram     # PlantUMLなどの図を使用
+
+※エラーでインストールできなかった場合
+gem install -r -p http://プロキシURL:ポート番号 asciidoctor
+gem install -r -p http://プロキシURL:ポート番号 --pre asciidoctor-pdf
+gem install -r -p http://プロキシURL:ポート番号 coderay
+gem install -r -p http://プロキシURL:ポート番号 asciidoctor-pdf-cjk
+gem install -r -p http://プロキシURL:ポート番号 asciidoctor-diagram
+
+※wordからasciidoc変換用のパッケージ
+choco install pandoc
+上コマンドが無理な場合
+choco install -r -p http://プロキシURL:ポート番号 pandoc
