@@ -2,11 +2,18 @@
 https://www.eclipse.org/downloads/packages/
 
 プロキシ設定追加
+・証明書エクスポート
+https://marketplace.eclipse.org/api/p?client=org.eclipse.epp.mpc.core
+・cacertsの場所(~\eclipse配下で"cacerts"を検索)
+~\eclipse\plugins\org.eclipse.justj.openjdk.hotspot.jre.full.win32.x86_64_15.0.1.v20201027-0507\jre\lib\security
 ・keytoolの場所
-~\pleiades\eclipse\jre\bin
+~\eclipse\plugins\org.eclipse.justj.openjdk.hotspot.jre.full.win32.x86_64_15.0.1.v20201027-0507\jre\bin
 
-・cacertsの場所
-~\pleiades\eclipse\jre\lib\security\cacerts
+・コマンド
+keytool -import -trustcacerts -file "証明書のパス" -keystore "cacertsのパス" -alias ca
+
+・証明書のパスワード
+changeit
 
 参考サイト
 https://qiita.com/nenokido2000/items/b36b6e5f0854d7d63ba6
