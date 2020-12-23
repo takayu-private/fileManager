@@ -1,0 +1,5 @@
+・keytoolの場所
+~\pleiades\eclipse\jre\bin
+
+・cacertsの場所
+~\pleiades\eclipse\jre\lib\security\cacerts
