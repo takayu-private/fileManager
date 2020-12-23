@@ -1,3 +1,7 @@
+本家ダウンロードパス
+https://www.eclipse.org/downloads/packages/
+
+プロキシ設定追加
 ・keytoolの場所
 ~\pleiades\eclipse\jre\bin
 
