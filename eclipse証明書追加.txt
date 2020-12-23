@@ -3,3 +3,6 @@
 
 ・cacertsの場所
 ~\pleiades\eclipse\jre\lib\security\cacerts
+
+参考サイト
+https://qiita.com/nenokido2000/items/b36b6e5f0854d7d63ba6
